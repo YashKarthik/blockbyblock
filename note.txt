@@ -10,3 +10,23 @@
 
 43.668900476196136,-79.38980231417031
 77 Bloor St W, Toronto, ON M5S 1M2
+
+Center
+43.671139, -79.392917
+110 Yorkville Ave, Toronto, ON M5R 1B9
+
+South
+43.666639, -79.392917
+75 Queen's Park Cres E, Toronto, ON M5S 1K7
+
+North
+43.675639, -79.392917
+30 Hillsboro Ave, Toronto, ON M5R 1S7
+
+West
+43.671139, -79.399117
+Laptop and Computer Repair Toronto, 86 Bedford Rd, Toronto, ON M5R 2K2
+
+East
+43.671139, -79.386717
+de Silva Architect, 2 Bloor St E Suite 3500, Toronto, ON M4W 1A8
