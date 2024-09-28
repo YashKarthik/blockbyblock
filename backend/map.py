@@ -86,7 +86,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
     db = []
     while current_time <= start_time + total_duration:
         specific_time = datetime(2024, 10, 1, 15, 1, 23, tzinfo=timezone.utc)
-        rfc3339_timestamp = specific_time.isoformat(timespec='seconds')
+        rfc3339_timestamp = current_time.isoformat(timespec='seconds')
         #center 
         traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
         print(traffic_info)
