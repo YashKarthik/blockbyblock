@@ -141,41 +141,41 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         )
         
         #north-west
-        traffic_info = get_traffic_data(start_lat, start_lon + 0.009, end_lat + 0.0124 , end_lon, api_key, rfc3339_timestamp)
+        traffic_info = get_traffic_data(start_lat, start_lon + 0.00225, end_lat + 0.0031 , end_lon, api_key, rfc3339_timestamp)
         duration = traffic_info['routes'][0]['duration']
         db.append({
-            "lat":start_lat + 0.009, 
-            "lon":start_lon + 0.0124,
+            "lat":start_lat + 0.00225, 
+            "lon":start_lon + 0.0031,
             "timestamp": rfc3339_timestamp,
             "duration": duration,
         }
         )
         #north-east
-        traffic_info = get_traffic_data(start_lat, start_lon + 0.009, end_lat - 0.0124 , end_lon, api_key, rfc3339_timestamp)
+        traffic_info = get_traffic_data(start_lat, start_lon + 0.00225, end_lat - 0.0031 , end_lon, api_key, rfc3339_timestamp)
         duration = traffic_info['routes'][0]['duration']
         db.append({
-            "lat":start_lat + 0.009, 
-            "lon":start_lon - 0.0124,
+            "lat":start_lat + 0.00225, 
+            "lon":start_lon - 0.0031,
             "timestamp": rfc3339_timestamp,
             "duration": duration,
         }
         )
          #south-east
-        traffic_info = get_traffic_data(start_lat, start_lon - 0.009, end_lat - 0.0124 , end_lon, api_key, rfc3339_timestamp)
+        traffic_info = get_traffic_data(start_lat, start_lon - 0.00225, end_lat - 0.0031 , end_lon, api_key, rfc3339_timestamp)
         duration = traffic_info['routes'][0]['duration']
         db.append({
-            "lat":start_lat - 0.009, 
-            "lon":start_lon - 0.0124,
+            "lat":start_lat - 0.00225, 
+            "lon":start_lon - 0.0031,
             "timestamp": rfc3339_timestamp,
             "duration": duration,
         }
         )
         #south-west
-        traffic_info = get_traffic_data(start_lat, start_lon - 0.009, end_lat + 0.0124 , end_lon, api_key, rfc3339_timestamp)
+        traffic_info = get_traffic_data(start_lat, start_lon - 0.00225, end_lat + 0.0031 , end_lon, api_key, rfc3339_timestamp)
         duration = traffic_info['routes'][0]['duration']
         db.append({
-            "lat":start_lat - 0.009, 
-            "lon":start_lon + 0.0124,
+            "lat":start_lat - 0.00225, 
+            "lon":start_lon + 0.0031,
             "timestamp": rfc3339_timestamp,
             "duration": duration,
         }
