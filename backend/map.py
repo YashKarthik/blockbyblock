@@ -72,7 +72,10 @@ end_lon = -79.37915254421802
 start_lat = 43.67115047619613
 start_lon = -79.39290231417031
 #current_time = datetime.now(timezone.utc)
-specific_time = datetime(2024, 10, 1, 15, 1, 23, tzinfo=timezone.utc)
+#specific_time = datetime(2024, 9, 1, 15, 1, 23, tzinfo=timezone.utc)
+EDT = timezone(timedelta(hours=-4))
+specific_time = datetime(2024, 10, 28, 19, 30, 0, tzinfo=EDT)
+
 # rfc3339_timestamp = specific_time.isoformat(timespec='seconds')
 # traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
 # data = json.dumps(traffic_info, indent=2)
