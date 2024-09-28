@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+const defaultTheme = require('tailwindcss/defaultTheme')
 
 const config: Config = {
   content: [
@@ -12,8 +13,12 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      fontFamily: {
+        'serif': ["EB Garamond", ...defaultTheme.fontFamily.serif],
+      }
     },
   },
   plugins: [],
 };
+
 export default config;
