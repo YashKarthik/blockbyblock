@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone, timedelta
 import csv
 import pandas as pd
+import numpy as np
 
 
 load_dotenv()
@@ -84,9 +85,9 @@ specific_time = datetime(2024, 10, 28, 19, 30, 0, tzinfo=EDT)
 # print(traffic_info['routes'][0]['duration'])
 # print(traffic_info["data"]["routes"]['duration'])
 
-def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
+def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time, offset):
     db = []
-    rfc3339_timestamp = start_time.isoformat(timespec='seconds')
+    rfc3339_timestamp = start_time.isoformat(timespec='seconds') + "Z"
     #center 
     traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
     print(traffic_info)
@@ -96,6 +97,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     print("center complete")
@@ -107,6 +109,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     #south
@@ -117,6 +120,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     #east
@@ -127,6 +131,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon - 0.0062,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     #west
@@ -137,6 +142,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon + 0.0062,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     
@@ -148,6 +154,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon + 0.0031,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     #north-east
@@ -158,6 +165,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon - 0.0031,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
         #south-east
@@ -168,6 +176,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon - 0.0031,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     #south-west
@@ -178,6 +187,7 @@ def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
         "lon":start_lon + 0.0031,
         "timestamp": rfc3339_timestamp,
         "duration": duration,
+        "offset": offset,
     }
     )
     return db
@@ -187,26 +197,52 @@ def calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
     total_duration = timedelta(hours=1)
     current_time = start_time
     db = []
+    offset = 0
     while current_time <= start_time + total_duration:
-        db += calculate(start_lat, start_lon, end_lat, end_lon, api_key, current_time)
+        db += calculate(start_lat, start_lon, end_lat, end_lon, api_key, current_time,offset)
         current_time += increment
+        offset += 5
     return db
 
-# db = calculate(start_lat, start_lon, end_lat, end_lon, api_key, specific_time)
-# filename = "new_output.csv"
-# # Get the headers (keys of the dictionary) from the first dictionary
-# headers = db[0].keys()
-
-# # Write the data to a CSV file
-# with open(filename, mode='w', newline='') as file:
-#     writer = csv.DictWriter(file, fieldnames=headers)
+def generate_clusters(lat, lon, seconds, scale_factor=30, spread=0.003):
+    # Number of points to generate is proportional to the seconds value
+    num_points = int(int(seconds) / scale_factor)  # Strip the 's' from the seconds value
+    # Random points around (lat, lon), uniformly distributed within a square region
+    lat_offsets = np.random.uniform(0, spread, num_points)
+    lon_offsets = np.random.uniform(0, spread, num_points)
     
-#     # Write the header
-#     writer.writeheader()
+    cluster_lat = lat + lat_offsets
+    cluster_lon = lon + lon_offsets
     
-#     # Write the data rows
-#     writer.writerows(db)
+    return cluster_lat, cluster_lon
 
+
+def mega_cluster(df):
+    df['duration'] = df['duration'].str.rstrip('s')
+    all_clusters = pd.DataFrame()
+
+    for timestamp, group in df.groupby('timestamp'):
+        cluster_lats, cluster_lons, cluster_offset = [], [], []
+        
+        # For each row in the group, generate clusters
+        for _, row in group.iterrows():
+            lat, lon, seconds, offset = row['lat'], row['lon'], row['duration'], row['offset']
+            cluster_lat, cluster_lon = generate_clusters(lat, lon, seconds)
+            cluster_lats.extend(cluster_lat)
+            cluster_lons.extend(cluster_lon)
+            cluster_offset.extend([offset] * len(cluster_lat))  # Or len(cluster_lon) since both should have the same length
+        
+        # Create a DataFrame for the clusters of this timestamp
+        data = {
+            'lat': cluster_lats,
+            'lon': cluster_lons,
+            'offset': cluster_offset
+        }
+        df_clusters = pd.DataFrame(data)
+        all_clusters = pd.concat([all_clusters, df_clusters], ignore_index=True)
+    return all_clusters
+        
+        # Sanitize the timestamp for use in filenames by replacing ':' and other invalid character
 
 def find_best_point():
     # Path to the CSV file
@@ -238,50 +274,94 @@ def find_best_point():
         # Output the row with the shortest duration
     print(f"Row with the shortest duration: {min_row}")
 
-addr_map = {
-'220 Bloor St W, Toronto, ON M5S 1T8': (43.668900476196136,-79.39600231417032),
-'30 Hillsboro Ave, Toronto, ON M5R 1S7, Canada': (43.675639, -79.392917),
-'127 Avenue Rd, Toronto, ON M5R 2H4': (43.67340047619613,-79.39600231417032),
-'Yorkville, Toronto, Ontario, Canada': (43.671139, -79.392917),
-'32 Davenport Rd, Toronto, ON M5R 0B5': (43.67340047619613,-79.38980231417031),
-"75 Queen's Park Cres E, Toronto, ON M5S 1K7, Canada": (43.666639, -79.392917),
-'86 Bedford Rd, Toronto, ON M5R 2K9, Canada': (43.671139, -79.399117),
-'77 Bloor St W, Toronto, ON M5S 1M2': (43.668900476196136,-79.38980231417031),
-'2 Bloor St E, Toronto, ON M4W 1A8, Canada': (43.671139, -79.386717)
-}
-def read_prices_csv():
-    file = 'locational_prices.csv'
-    df = pd.read_csv(file)
-    mySet = set()
-    end_lat = 43.64362914180176
-    end_lon = -79.37915254421802
-    start_latitudes = []
-    start_longitudes = []
-    increment = timedelta(days=7)
-    durations = []
-    for index, row in df.iterrows():
-        addr = row['start_location']
-        date_str = row['date']
-        time_str = row['time']
-        start_time = datetime.strptime(date_str + "," + time_str, '%m/%d/%Y,%H:%M:%S')
-        start_time += increment
-        rfc3339_timestamp = start_time.isoformat(timespec='seconds') + 'Z'
-        start_lat, start_lon= addr_map[addr]
-        print(rfc3339_timestamp)
-        print(start_lat)
-        print(start_lon)
-        traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
-        print(traffic_info)
-        duration = traffic_info['routes'][0]['duration']
-        start_latitudes.append(start_lat)
-        start_longitudes.append(start_lon)
-        durations.append(duration)
-    df['start_lat'] = start_latitudes
-    df['start_lon'] = start_longitudes
-    df['end_lat'] = end_lat
-    df['end_lon'] = end_lon
-    df['duration'] = durations
-    new_file = 'updated_locational_prices.csv'
-    df.to_csv(new_file, index=False)        # print(row['start_location'], row['total_price'])
+def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
+    start_time = datetime.now()
+    increment = timedelta(minutes=5)
+    EDT = timedelta(hours=4)
+    start_time += increment
+    start_time += EDT
+    print(start_time)
+    # start_time += EDT
+    api_key = os.getenv('API_KEY') 
+    data = calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
+    df = pd.DataFrame(data)
+    df_clusters = mega_cluster(df)
+    geojson = dataframe_to_geojson(df_clusters)
+    print(geojson)
+    with open('my_dict.json', 'w') as json_file:
+        json.dump(geojson, json_file, indent=4)
+    return geojson
 
-read_prices_csv()
+
+import pandas as pd
+
+def dataframe_to_geojson(df):
+    features = []
+
+    # Iterate over DataFrame rows
+    for index, row in df.iterrows():
+        # Assuming the DataFrame has columns: 'lat', 'lon', and 'offset'
+        lat = row['lat']
+        lon = row['lon']
+        offset = row['offset']
+
+        # Create the GeoJSON feature for each row
+        feature = {
+            "id": str(index),
+            "type": "Feature",
+            "properties": {
+                "lat": float(lat),
+                "lon": float(lon),
+                "offset": int(offset)  # Assuming offset is an integer
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [float(lon), float(lat)]
+            }
+        }
+        features.append(feature)
+
+    # Create the GeoJSON structure
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+    return geojson
+
+
+# Function to convert CSV data to GeoJSON
+def csv_to_geojson(csv_data):
+    reader = csv.reader(csv_data.splitlines())
+    headers = next(reader)  # Get the headers from the first line
+    features = []
+    
+    for index, row in enumerate(reader):
+        if row:  # Ignore empty rows
+            lat, lon, offset = row
+            feature = {
+                "id": str(index),
+                "type": "Feature",
+                "properties": {
+                    "lat": float(lat),
+                    "lon": float(lon),
+                    "offset": int(offset)  # Assuming offset is an integer
+                },
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [float(lon), float(lat)]
+                }
+            }
+            features.append(feature)
+    
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+    
+    return geojson
+
+
+# generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
+
+#print(datetime.now())

@@ -73,7 +73,8 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
   }, [minute]);
 
   useEffect(() => {
-    const data = fetch("localhost:8080/api/data", {
+    async function getData(){
+      const data = await fetch("http://localhost:5000/api", {
       headers: {
         "Content-Type": "application/json",
       },
@@ -81,9 +82,17 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       body: JSON.stringify({
         start: startCoords,
         dest: destCoords,
+       })
       })
-    });
-  }, [startCoords, destCoords]);
+      const res = await data.json();
+      console.log(res)
+      // @ts-ignore
+      mapRef.current.getSource('earthquakes').setData(res);
+    }
+
+    getData();
+
+    }, [startCoords, destCoords]);
 
   function getHeatmap() {
     if (mapRef.current) {
