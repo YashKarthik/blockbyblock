@@ -279,14 +279,14 @@ def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     start_time += increment
     start_time += EDT
     # print(start_time)
-    # # start_time += EDT
-    # api_key = os.getenv('API_KEY') 
-    # data = calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
-    # df = pd.DataFrame(data)
-    # min_row = find_best_point(df)
-    rfc3339_timestamp = start_time.isoformat(timespec='seconds') + "Z"
-    traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
-    duration = traffic_info['routes'][0]['duration']
+    # start_time += EDT
+    api_key = os.getenv('API_KEY') 
+    data = calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
+    df = pd.DataFrame(data)
+    min_row = find_best_point(df)
+    # rfc3339_timestamp = start_time.isoformat(timespec='seconds') + "Z"
+    # traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
+    # duration = traffic_info['routes'][0]['duration']
     geo_api_key = os.getenv('GEO_API_KEY')  # Replace with your Google API key
 
     start_location = get_address_from_coordinates(start_lat, start_lon, geo_api_key)
@@ -294,27 +294,27 @@ def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     
     price_table = get_uber_fare(start_location, end_location)
     total_price = get_final_price( price_table )
-    dur1 = int(duration.strip('s')) - 10
-    dur2 = int(duration.strip('s'))
-    print(dur1)
-    print(dur2)
-    predicted_price = predict_price(dur1, float(total_price), dur2)
+    # dur1 = int(duration.strip('s')) - 10
+    # dur2 = int(duration.strip('s'))
+    # print(dur1)
+    # print(dur2)
+    # predicted_price = predict_price(dur1, float(total_price), dur2)
     print(total_price)
+    predicted_price = predict_price(min_row["cur_duration"], float(total_price) ,min_row["min_duration"])
     print(predicted_price)
-    # predicted_price = predict_price(min_row["cur_duration"], total_price ,min_row["min_duration"])
-    #print(best_point)
-    # best_point = {
-    #     "lat": min_row['lat'],
-    #     "lon": min_row['lon'],
-    #     "offset": min_row['offset'],
-    #     "percent": min_row['percent']
-    # }
-    # df_clusters = mega_cluster(df)
-    # geojson = dataframe_to_geojson(df_clusters)
-    # # print(geojson)
-    # with open('my_dict.json', 'w') as json_file:
-    #     json.dump(geojson, json_file, indent=4)
-    # return geojson , best_point
+    best_point = {
+        "lat": min_row['lat'],
+        "lon": min_row['lon'],
+        "offset": min_row['offset'],
+        "og_price": float(total_price),
+        "new_price": predicted_price
+    }
+    df_clusters = mega_cluster(df)
+    geojson = dataframe_to_geojson(df_clusters)
+    # print(geojson)
+    with open('my_dict.json', 'w') as json_file:
+        json.dump(geojson, json_file, indent=4)
+    return geojson , best_point
 
 def dataframe_to_geojson(df):
     features = []
