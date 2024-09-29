@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 import csv
 import pandas as pd
 import numpy as np
-
+from scrape_prices import get_final_price, get_uber_fare
 
 load_dotenv()
 
@@ -261,8 +261,16 @@ def find_best_point(df):
 
         # Output the row with the shortest duration
     min_row["percent"] = min_duration / cur_duration
+    min_row["min_duration"] = min_duration
+    min_row["cur_duration"] = cur_duration
     print(f"Row with the shortest duration: {min_row}")
     return min_row
+
+def predict_price(dur1, price1, dur2):
+    slope = 0.012175451693711713
+    intercept = price1 - slope * dur1
+    price2 = slope * dur2 + intercept
+    return price2
 
 def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     start_time = datetime.now()
@@ -270,28 +278,43 @@ def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     EDT = timedelta(hours=4)
     start_time += increment
     start_time += EDT
-    print(start_time)
-    # start_time += EDT
-    api_key = os.getenv('API_KEY') 
-    data = calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
-    df = pd.DataFrame(data)
-    min_row = find_best_point(df)
-    best_point = {
-        "lat": min_row['lat'],
-        "lon": min_row['lon'],
-        "offset": min_row['offset'],
-        "percent": min_row['percent']
-    }
+    # print(start_time)
+    # # start_time += EDT
+    # api_key = os.getenv('API_KEY') 
+    # data = calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
+    # df = pd.DataFrame(data)
+    # min_row = find_best_point(df)
+    rfc3339_timestamp = start_time.isoformat(timespec='seconds') + "Z"
+    traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    geo_api_key = os.getenv('GEO_API_KEY')  # Replace with your Google API key
+
+    start_location = get_address_from_coordinates(start_lat, start_lon, geo_api_key)
+    end_location = get_address_from_coordinates(end_lat, end_lon, geo_api_key)
+    
+    price_table = get_uber_fare(start_location, end_location)
+    total_price = get_final_price( price_table )
+    dur1 = int(duration.strip('s')) - 10
+    dur2 = int(duration.strip('s'))
+    print(dur1)
+    print(dur2)
+    predicted_price = predict_price(dur1, float(total_price), dur2)
+    print(total_price)
+    print(predicted_price)
+    # predicted_price = predict_price(min_row["cur_duration"], total_price ,min_row["min_duration"])
     #print(best_point)
-    df_clusters = mega_cluster(df)
-    geojson = dataframe_to_geojson(df_clusters)
-    # print(geojson)
-    with open('my_dict.json', 'w') as json_file:
-        json.dump(geojson, json_file, indent=4)
-    return geojson , best_point
-
-
-import pandas as pd
+    # best_point = {
+    #     "lat": min_row['lat'],
+    #     "lon": min_row['lon'],
+    #     "offset": min_row['offset'],
+    #     "percent": min_row['percent']
+    # }
+    # df_clusters = mega_cluster(df)
+    # geojson = dataframe_to_geojson(df_clusters)
+    # # print(geojson)
+    # with open('my_dict.json', 'w') as json_file:
+    #     json.dump(geojson, json_file, indent=4)
+    # return geojson , best_point
 
 def dataframe_to_geojson(df):
     features = []
@@ -327,39 +350,43 @@ def dataframe_to_geojson(df):
 
     return geojson
 
+def get_address_from_coordinates(lat, lon, api_key):
+    # URL for Google Maps Geocoding API
+    base_url = 'https://maps.googleapis.com/maps/api/geocode/json'
 
-# Function to convert CSV data to GeoJSON
-def csv_to_geojson(csv_data):
-    reader = csv.reader(csv_data.splitlines())
-    headers = next(reader)  # Get the headers from the first line
-    features = []
-    
-    for index, row in enumerate(reader):
-        if row:  # Ignore empty rows
-            lat, lon, offset = row
-            feature = {
-                "id": str(index),
-                "type": "Feature",
-                "properties": {
-                    "lat": float(lat),
-                    "lon": float(lon),
-                    "offset": int(offset)  # Assuming offset is an integer
-                },
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [float(lon), float(lat)]
-                }
-            }
-            features.append(feature)
-    
-    geojson = {
-        "type": "FeatureCollection",
-        "features": features
+    # Parameters for the request
+    params = {
+        'latlng': f'{lat},{lon}',
+        'key': api_key
     }
-    
-    return geojson
+
+    # Make a GET request to the API
+    response = requests.get(base_url, params=params)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        data = response.json()
+
+        # Check if there are results
+        if data['results']:
+            # Extract the formatted address from the first result
+            return data['results'][0]['formatted_address']
+        else:
+            return 'No address found for the given coordinates.'
+    else:
+        return f'Error: Unable to connect to the API (status code: {response.status_code}).'
+
+# Example usage
+# latitude = 40.714224
+# longitude = -73.961452  # Replace with your actual API key
+
+# api_key = os.getenv('GEO_API_KEY')  # Replace with your Google API key
+
+# print()
+# address = get_address_from_coordinates(latitude, longitude, api_key)
+# print('Address:', address)
 
 
-# generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
+generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
 
 #print(datetime.now())
