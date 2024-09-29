@@ -41,11 +41,15 @@ def get_uber_fare(start_location, end_location):
         end_input.send_keys(Keys.RETURN)
 
         # Submit the form
-        submit_button = driver.find_element(By.ID, "get-fare-button")
-        submit_button.click()
+        try:
+            submit_button = driver.find_element(By.ID, "get-fare-button")
+            submit_button.click()
+        except:
+            time.sleep(10)
+    
 
         # Wait for the results to load
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "fare-finder-result"))
         )
 
@@ -82,55 +86,57 @@ def get_final_price( price_table ):
 
 def main( locations ):
     data = pd.DataFrame(columns=['date', 'time', 'start_location', 'end_location', 'total_price'])
-    for i in range(2):
-        t = time.strftime("%H:%M:%S")
-        
-        price_table = get_uber_fare(start_location, end_location);
-        total_price = get_final_price( price_table );
-        data = data.append({'date': date, 'time': t, 'start_location': start_location, 'end_location': end_location, 'total_price': total_price}, ignore_index=True)
-        filename = 'locational_prices.csv'
-        append_to_file(filename, data)
-        print(total_price)
+    start_location = locations[0]
+    end_location = locations[1]
+    t = time.strftime("%H:%M:%S")
+    
+    price_table = get_uber_fare(start_location, end_location);
+    total_price = get_final_price( price_table );
+    data = data.append({'date': date, 'time': t, 'start_location': start_location, 'end_location': end_location, 'total_price': total_price}, ignore_index=True)
+    filename = 'locational_prices.csv'
+    append_to_file(filename, data)
+    print(total_price)
 
-        # sleep for 5 minutes
-        time.sleep(300)
+    #time.sleep(300)
+
 
 if __name__ == "__main__":
     #data = pd.DataFrame(columns=['date', 'time', 'start_location', 'end_location', 'total_price'])
 
     # loop to run this every 5 minutes for 1 hour
     date = time.strftime("%m/%d/%Y")
+    start_time = time.time()
 
     start_location = "Yorkville, Toronto, Ontario, Canada"
     end_location = "Scotiabank Arena, 40 Bay St, Toronto, Ontario M5J 2X8, Canada"
     location1 = (start_location, end_location)
 
-    start_location = "110 Yorkville Ave, Toronto, ON M5R 1B9, Canada"
+    start_location = "75 Queen's Park Cres E, Toronto, ON M5S 1K7, Canada"
     location2 = (start_location, end_location)
 
-    start_location = "75 Queen's Park Cres E, Toronto, ON M5S 1K7, Canada"
+    start_location = "30 Hillsboro Ave, Toronto, ON M5R 1S7, Canada"
     location3 = (start_location, end_location)
 
-    start_location = "30 Hillsboro Ave, Toronto, ON M5R 1S7, Canada"
+    start_location = "86 Bedford Rd, Toronto, ON M5R 2K9, Canada"
     location4 = (start_location, end_location)
 
-    start_location = "86 Bedford Rd, Toronto, ON M5R 2K9, Canada"
+    start_location = "2 Bloor St E, Toronto, ON M4W 1A8, Canada"
     location5 = (start_location, end_location)
 
-    start_location = "2 Bloor St E, Toronto, ON M4W 1A8, Canada"
+    start_location = "32 Davenport Rd, Toronto, ON M5R 0B5"
     location6 = (start_location, end_location)
 
-    start_location = "32 Davenport Rd, Toronto, ON M5R 0B5"
+    start_location = "127 Avenue Rd, Toronto, ON M5R 2H4"
     location7 = (start_location, end_location)
 
-    start_location = "117-127 Avenue Rd, Toronto, ON M5R 2H4"
+    start_location = "220 Bloor St W, Toronto, ON M5S 1T8"
     location8 = (start_location, end_location)
 
-    start_location = "220 Bloor St W, Toronto, ON M5S 1T8"
+    start_location = "77 Bloor St W, Toronto, ON M5S 1M2"
     location9 = (start_location, end_location)
 
-    start_location = "77 Bloor St W, Toronto, ON M5S 1M2"
-    location10 = (start_location, end_location)
-
     with Pool(10) as p:
-        p.map(main, [location1, location2, location3, location4, location5, location6, location7, location8, location9, location10])
+        p.map(main, [location1, location2, location3, location4, location5, location6, location7, location8, location9])
+    
+    end_time = time.time()
+    print("Time taken: ", end_time - start_time)
