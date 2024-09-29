@@ -5,6 +5,7 @@ import requests
 import json
 from datetime import datetime, timezone, timedelta
 import csv
+import pandas as pd
 
 
 load_dotenv()
@@ -82,125 +83,129 @@ specific_time = datetime(2024, 10, 28, 19, 30, 0, tzinfo=EDT)
 # print(json.dumps(traffic_info, indent=2))
 # print(traffic_info['routes'][0]['duration'])
 # print(traffic_info["data"]["routes"]['duration'])
+
 def calculate(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
+    db = []
+    rfc3339_timestamp = start_time.isoformat(timespec='seconds')
+    #center 
+    traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
+    print(traffic_info)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat,
+        "lon":start_lon,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    print("center complete")
+    #north
+    traffic_info = get_traffic_data(start_lat, start_lon + 0.0045, end_lat, end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat + 0.0045,
+        "lon":start_lon,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    #south
+    traffic_info = get_traffic_data(start_lat, start_lon - 0.0045, end_lat, end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat - 0.0045,
+        "lon":start_lon,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    #east
+    traffic_info = get_traffic_data(start_lat, start_lon , end_lat - 0.0062, end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat, 
+        "lon":start_lon - 0.0062,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    #west
+    traffic_info = get_traffic_data(start_lat, start_lon , end_lat + 0.0062, end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat, 
+        "lon":start_lon + 0.0062,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    
+    #north-west
+    traffic_info = get_traffic_data(start_lat, start_lon + 0.00225, end_lat + 0.0031 , end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat + 0.00225, 
+        "lon":start_lon + 0.0031,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    #north-east
+    traffic_info = get_traffic_data(start_lat, start_lon + 0.00225, end_lat - 0.0031 , end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat + 0.00225, 
+        "lon":start_lon - 0.0031,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+        #south-east
+    traffic_info = get_traffic_data(start_lat, start_lon - 0.00225, end_lat - 0.0031 , end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat - 0.00225, 
+        "lon":start_lon - 0.0031,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    #south-west
+    traffic_info = get_traffic_data(start_lat, start_lon - 0.00225, end_lat + 0.0031 , end_lon, api_key, rfc3339_timestamp)
+    duration = traffic_info['routes'][0]['duration']
+    db.append({
+        "lat":start_lat - 0.00225, 
+        "lon":start_lon + 0.0031,
+        "timestamp": rfc3339_timestamp,
+        "duration": duration,
+    }
+    )
+    return db
+
+def calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time):
     increment = timedelta(minutes=5)
     total_duration = timedelta(hours=1)
     current_time = start_time
     db = []
     while current_time <= start_time + total_duration:
-        specific_time = datetime(2024, 10, 1, 15, 1, 23, tzinfo=timezone.utc)
-        rfc3339_timestamp = current_time.isoformat(timespec='seconds')
-        #center 
-        traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
-        print(traffic_info)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat,
-            "lon":start_lon,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        print("center complete")
-        #north
-        traffic_info = get_traffic_data(start_lat, start_lon + 0.0045, end_lat, end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat + 0.0045,
-            "lon":start_lon,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        #south
-        traffic_info = get_traffic_data(start_lat, start_lon - 0.0045, end_lat, end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat - 0.0045,
-            "lon":start_lon,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        #east
-        traffic_info = get_traffic_data(start_lat, start_lon , end_lat - 0.0062, end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat, 
-            "lon":start_lon - 0.0062,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        #west
-        traffic_info = get_traffic_data(start_lat, start_lon , end_lat + 0.0062, end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat, 
-            "lon":start_lon + 0.0062,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        
-        #north-west
-        traffic_info = get_traffic_data(start_lat, start_lon + 0.00225, end_lat + 0.0031 , end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat + 0.00225, 
-            "lon":start_lon + 0.0031,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        #north-east
-        traffic_info = get_traffic_data(start_lat, start_lon + 0.00225, end_lat - 0.0031 , end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat + 0.00225, 
-            "lon":start_lon - 0.0031,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-         #south-east
-        traffic_info = get_traffic_data(start_lat, start_lon - 0.00225, end_lat - 0.0031 , end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat - 0.00225, 
-            "lon":start_lon - 0.0031,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
-        #south-west
-        traffic_info = get_traffic_data(start_lat, start_lon - 0.00225, end_lat + 0.0031 , end_lon, api_key, rfc3339_timestamp)
-        duration = traffic_info['routes'][0]['duration']
-        db.append({
-            "lat":start_lat - 0.00225, 
-            "lon":start_lon + 0.0031,
-            "timestamp": rfc3339_timestamp,
-            "duration": duration,
-        }
-        )
+        db += calculate(start_lat, start_lon, end_lat, end_lon, api_key, current_time)
         current_time += increment
-
     return db
 
-db = calculate(start_lat, start_lon, end_lat, end_lon, api_key, specific_time)
-filename = "output.csv"
-# Get the headers (keys of the dictionary) from the first dictionary
-headers = db[0].keys()
+# db = calculate(start_lat, start_lon, end_lat, end_lon, api_key, specific_time)
+# filename = "new_output.csv"
+# # Get the headers (keys of the dictionary) from the first dictionary
+# headers = db[0].keys()
 
-# Write the data to a CSV file
-with open(filename, mode='w', newline='') as file:
-    writer = csv.DictWriter(file, fieldnames=headers)
+# # Write the data to a CSV file
+# with open(filename, mode='w', newline='') as file:
+#     writer = csv.DictWriter(file, fieldnames=headers)
     
-    # Write the header
-    writer.writeheader()
+#     # Write the header
+#     writer.writeheader()
     
-    # Write the data rows
-    writer.writerows(db)
+#     # Write the data rows
+#     writer.writerows(db)
 
 
 def find_best_point():
@@ -233,4 +238,50 @@ def find_best_point():
         # Output the row with the shortest duration
     print(f"Row with the shortest duration: {min_row}")
 
-# find_best_point()
+addr_map = {
+'220 Bloor St W, Toronto, ON M5S 1T8': (43.668900476196136,-79.39600231417032),
+'30 Hillsboro Ave, Toronto, ON M5R 1S7, Canada': (43.675639, -79.392917),
+'127 Avenue Rd, Toronto, ON M5R 2H4': (43.67340047619613,-79.39600231417032),
+'Yorkville, Toronto, Ontario, Canada': (43.671139, -79.392917),
+'32 Davenport Rd, Toronto, ON M5R 0B5': (43.67340047619613,-79.38980231417031),
+"75 Queen's Park Cres E, Toronto, ON M5S 1K7, Canada": (43.666639, -79.392917),
+'86 Bedford Rd, Toronto, ON M5R 2K9, Canada': (43.671139, -79.399117),
+'77 Bloor St W, Toronto, ON M5S 1M2': (43.668900476196136,-79.38980231417031),
+'2 Bloor St E, Toronto, ON M4W 1A8, Canada': (43.671139, -79.386717)
+}
+def read_prices_csv():
+    file = 'locational_prices.csv'
+    df = pd.read_csv(file)
+    mySet = set()
+    end_lat = 43.64362914180176
+    end_lon = -79.37915254421802
+    start_latitudes = []
+    start_longitudes = []
+    increment = timedelta(days=7)
+    durations = []
+    for index, row in df.iterrows():
+        addr = row['start_location']
+        date_str = row['date']
+        time_str = row['time']
+        start_time = datetime.strptime(date_str + "," + time_str, '%m/%d/%Y,%H:%M:%S')
+        start_time += increment
+        rfc3339_timestamp = start_time.isoformat(timespec='seconds') + 'Z'
+        start_lat, start_lon= addr_map[addr]
+        print(rfc3339_timestamp)
+        print(start_lat)
+        print(start_lon)
+        traffic_info = get_traffic_data(start_lat, start_lon, end_lat, end_lon, api_key, rfc3339_timestamp)
+        print(traffic_info)
+        duration = traffic_info['routes'][0]['duration']
+        start_latitudes.append(start_lat)
+        start_longitudes.append(start_lon)
+        durations.append(duration)
+    df['start_lat'] = start_latitudes
+    df['start_lon'] = start_longitudes
+    df['end_lat'] = end_lat
+    df['end_lon'] = end_lon
+    df['duration'] = durations
+    new_file = 'updated_locational_prices.csv'
+    df.to_csv(new_file, index=False)        # print(row['start_location'], row['total_price'])
+
+read_prices_csv()
