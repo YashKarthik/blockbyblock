@@ -2,14 +2,16 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import data from "../../data4.json"
+import data from "../../data6.json"
 
-import { useEffect, MutableRefObject, useState } from 'react'
+import { useEffect, MutableRefObject, useState, Dispatch, SetStateAction } from 'react'
 
 import { MAPBOX_PUBLIC_TOKEN } from '../../constants';
 
 export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number, number], zoom: number, mapRef: MutableRefObject<mapboxgl.Map | null>, mapContainerRef: MutableRefObject<HTMLDivElement | null> }) {
   const [minute, setHour] = useState(-1);
+  const [startCoords, setStartCoords] = useState([-79.39087785766945, 43.67171211911842]);
+  const [destCoords, setDestCoords] = useState([-79.3790669409802, 43.64364522322814]);
 
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_PUBLIC_TOKEN as string
@@ -21,14 +23,37 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       maxBounds: [[-79.47431, 43.63528], [-79.25573, 43.77538]]
     });
 
-    const marker = new mapboxgl.Marker({
+    const destMarker = new mapboxgl.Marker({
+      draggable: true,
       color: "red",
     })
       .setLngLat([-79.3790669409802, 43.64364522322814])
       .addTo(mapRef.current);
 
+    const startMarker = new mapboxgl.Marker({
+      draggable: true,
+      color: "blue",
+    })
+      .setLngLat([-79.3964842837308, 43.67473658056805])
+      .addTo(mapRef.current);
+
+    function onDragEndDest() {
+      const lngLat = destMarker.getLngLat();
+      setDestCoords([lngLat.lng, lngLat.lat]);
+    }
+
+    function onDragEndStart() {
+      const lngLat = startMarker.getLngLat();
+      setStartCoords([lngLat.lng, lngLat.lat]);
+    }
+
+    destMarker.on('dragend', onDragEndDest);
+    startMarker.on('dragend', onDragEndStart);
+
     mapRef.current.on('load', () => {
       getHeatmap();
+      // @ts-ignore
+      mapRef.current.getSource('earthquakes').setData(data);
       if (minute <= -1) {
         setHour(0);
       }
@@ -47,13 +72,26 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
     }
   }, [minute]);
 
+  useEffect(() => {
+    const data = fetch("localhost:8080/api/data", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify({
+        start: startCoords,
+        dest: destCoords,
+      })
+    });
+  }, [startCoords, destCoords]);
+
   function getHeatmap() {
     if (mapRef.current) {
       if (!mapRef.current.getSource("earthquakes")) {
         mapRef.current.addSource("earthquakes", {
           type: "geojson",
           // @ts-ignore
-          data: data
+          data: []
         });
 
         mapRef.current.addLayer({
@@ -99,7 +137,7 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       <div className="h-screen w-screen" id="map-container" ref={mapContainerRef}>
       </div>
 
-      <div className="absolute bottom-3 right-0 m-4 bg-white text-black p-2 rounded-md">
+      <div className="absolute bottom-3 right-0 m-4 bg-orange-100 text-yellow-600 p-2 border-2 border-orange-400 rounded-md">
         <h2>Time: <label id="active-hour">{ minute }</label></h2>
         <input
           id="slider"

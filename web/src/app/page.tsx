@@ -20,16 +20,7 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen font-serif">
-      <div className="absolute flex items-center gap-2 top-3 right-5 z-10 text-yellow-600 fill-black bg-orange-100 rounded-sm border-yellow-600 border-2 pr-1">
-        <input type="text" className="bg-transparent border-none outline-none p-1 rounded-sm placeholder:text-yellow-500" placeholder='CN Tower' />
-
-        <button onClick={() => flyHome()}>
-          {/* Search icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
-        </button>
-
+      <div className="absolute flex items-center gap-2 bottom-16 right-5 z-10 text-yellow-600 fill-black bg-orange-100 rounded-sm border-yellow-600 border-2 pr-1">
         <button onClick={() => flyHome()}>
           {/* Home Icon */}
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
