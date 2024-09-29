@@ -18,8 +18,12 @@ def get_map():
         start_lon = startCoords[0]
         end_lat = destCoords[1]
         end_lon = destCoords[0]
-        geoJson = generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
-        return jsonify(geoJson), 200
+        geoJson , best_point = generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
+        result = {
+            'geo_json': geoJson,
+            'best_point': best_point
+        }
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

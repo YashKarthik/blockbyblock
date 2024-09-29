@@ -244,25 +244,13 @@ def mega_cluster(df):
         
         # Sanitize the timestamp for use in filenames by replacing ':' and other invalid character
 
-def find_best_point():
-    # Path to the CSV file
-    csv_file = 'output.csv'
-
-    # Initialize an empty list to store the rows as dictionaries
-    data = []
-
-    # Read the CSV file and convert it to a list of dictionaries
-    with open(csv_file, mode='r') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            data.append(row)
-
+def find_best_point(df):
     # Initialize variables to store the minimum duration and the corresponding row
     min_duration = float('inf')
     min_row = None
 
     # Loop through the list of dictionaries to find the shortest duration
-    for row in data:
+    for index, row in df.iterrows():
         # Extract the duration value and convert it to an integer (removing the 's' suffix)
         duration = int(row['duration'].strip('s'))
     
@@ -273,6 +261,7 @@ def find_best_point():
 
         # Output the row with the shortest duration
     print(f"Row with the shortest duration: {min_row}")
+    return min_row
 
 def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     start_time = datetime.now()
@@ -285,12 +274,19 @@ def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     api_key = os.getenv('API_KEY') 
     data = calculate_total(start_lat, start_lon, end_lat, end_lon, api_key, start_time)
     df = pd.DataFrame(data)
+    min_row = find_best_point(df)
+    best_point = {
+        "lat": min_row['lat'],
+        "lon": min_row['lon'],
+        "offset": min_row['offset']
+    }
+    #print(best_point)
     df_clusters = mega_cluster(df)
     geojson = dataframe_to_geojson(df_clusters)
     print(geojson)
     with open('my_dict.json', 'w') as json_file:
         json.dump(geojson, json_file, indent=4)
-    return geojson
+    return geojson , best_point
 
 
 import pandas as pd
