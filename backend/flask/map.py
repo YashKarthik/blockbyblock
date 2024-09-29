@@ -248,7 +248,7 @@ def find_best_point(df):
     # Initialize variables to store the minimum duration and the corresponding row
     min_duration = float('inf')
     min_row = None
-
+    cur_duration = int(df.iloc[0]["duration"].strip('s'))
     # Loop through the list of dictionaries to find the shortest duration
     for index, row in df.iterrows():
         # Extract the duration value and convert it to an integer (removing the 's' suffix)
@@ -260,6 +260,7 @@ def find_best_point(df):
             min_row = row
 
         # Output the row with the shortest duration
+    min_row["percent"] = min_duration / cur_duration
     print(f"Row with the shortest duration: {min_row}")
     return min_row
 
@@ -278,12 +279,13 @@ def generate_geoJSON(start_lat, start_lon, end_lat, end_lon):
     best_point = {
         "lat": min_row['lat'],
         "lon": min_row['lon'],
-        "offset": min_row['offset']
+        "offset": min_row['offset'],
+        "percent": min_row['percent']
     }
     #print(best_point)
     df_clusters = mega_cluster(df)
     geojson = dataframe_to_geojson(df_clusters)
-    print(geojson)
+    # print(geojson)
     with open('my_dict.json', 'w') as json_file:
         json.dump(geojson, json_file, indent=4)
     return geojson , best_point

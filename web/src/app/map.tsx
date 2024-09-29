@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 import data from "../../data6.json"
 
-import { useEffect, MutableRefObject, useState, Dispatch, SetStateAction } from 'react'
+import { useEffect, MutableRefObject, useState } from 'react'
 
 import { MAPBOX_PUBLIC_TOKEN } from '../../constants';
 
@@ -13,6 +13,7 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
   const [startCoords, setStartCoords] = useState([-79.39087785766945, 43.67171211911842]);
   const [destCoords, setDestCoords] = useState([-79.3790669409802, 43.64364522322814]);
   const [bestStart,  setBestStart] = useState<number[] | null>(null);
+  const [bestMarker, setCurrBestMarker] = useState<mapboxgl.Marker>();
 
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_PUBLIC_TOKEN as string
@@ -83,13 +84,20 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
     .setLngLat([bestStart[0], bestStart[1]])
     .addTo(mapRef.current);
 
+    setCurrBestMarker(prev => {
+      if (prev) {
+        prev.remove(); 
+      }
+      return bestMarker;
+    });
+
     setOffset(bestStart[2]);
 
   }, [bestStart]);
 
   useEffect(() => {
     async function getData(){
-      setBestStart([-79.3790669409802, 43.64865522322814, 10]);
+      
       const data = await fetch("http://localhost:5000/api", {
       headers: {
         "Content-Type": "application/json",
@@ -102,8 +110,11 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       })
       const res = await data.json();
       console.log(res)
+      const geoJson = res['geo_json']
+      const best_point = res['best_point']
+      setBestStart([best_point['lon'], best_point['lat'], best_point['offset']]);
       // @ts-ignore
-      mapRef.current.getSource('earthquakes').setData(res);
+      mapRef.current.getSource('earthquakes').setData(geoJson);
     }
 
     getData();
