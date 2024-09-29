@@ -9,9 +9,10 @@ import { useEffect, MutableRefObject, useState, Dispatch, SetStateAction } from 
 import { MAPBOX_PUBLIC_TOKEN } from '../../constants';
 
 export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number, number], zoom: number, mapRef: MutableRefObject<mapboxgl.Map | null>, mapContainerRef: MutableRefObject<HTMLDivElement | null> }) {
-  const [minute, setHour] = useState(-1);
+  const [offset, setOffset] = useState(-1);
   const [startCoords, setStartCoords] = useState([-79.39087785766945, 43.67171211911842]);
   const [destCoords, setDestCoords] = useState([-79.3790669409802, 43.64364522322814]);
+  const [bestStart,  setBestStart] = useState<number[] | null>(null);
 
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_PUBLIC_TOKEN as string
@@ -54,8 +55,8 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       getHeatmap();
       // @ts-ignore
       mapRef.current.getSource('earthquakes').setData(data);
-      if (minute <= -1) {
-        setHour(0);
+      if (offset <= -1) {
+        setOffset(0);
       }
     })
 
@@ -65,15 +66,30 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
   }, [])
 
   useEffect(() => {
-    if (minute >= 0) {
-      console.log("here", minute)
-      mapRef.current!.setFilter('earthquakes-heat', ['==', ['get', 'offset'], minute])
-      mapRef.current!.setFilter('earthquakes-viz', ['==', ['get', 'offset'], minute])
+    if (offset >= 0) {
+      console.log("here", offset)
+      mapRef.current!.setFilter('earthquakes-heat', ['==', ['get', 'offset'], offset])
+      mapRef.current!.setFilter('earthquakes-viz', ['==', ['get', 'offset'], offset])
     }
-  }, [minute]);
+  }, [offset]);
+
+  useEffect(() => {
+    if (offset < 0) return;
+    if (bestStart === null || mapRef.current == null) return;
+
+    const bestMarker = new mapboxgl.Marker({
+      color: "violet",
+    })
+    .setLngLat([bestStart[0], bestStart[1]])
+    .addTo(mapRef.current);
+
+    setOffset(bestStart[2]);
+
+  }, [bestStart]);
 
   useEffect(() => {
     async function getData(){
+      setBestStart([-79.3790669409802, 43.64865522322814, 10]);
       const data = await fetch("http://localhost:5000/api", {
       headers: {
         "Content-Type": "application/json",
@@ -131,7 +147,13 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
                 0.9, "yellow",
                 1, "red"
               ],
-              'heatmap-radius': 40,
+              'heatmap-radius': [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                1, 10,
+                12, 30
+              ],
               'heatmap-opacity': 0.5
             }
           },
@@ -147,7 +169,7 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       </div>
 
       <div className="absolute bottom-3 right-0 m-4 bg-orange-100 text-yellow-600 p-2 border-2 border-orange-400 rounded-md">
-        <h2>Time: <label id="active-hour">{ minute }</label></h2>
+        <h2>Time: <label id="active-hour">{ offset }</label></h2>
         <input
           id="slider"
           className="row"
@@ -155,8 +177,8 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
           min="0"
           max="60"
           step="5"
-          value={ minute }
-          onChange={(e) => setHour(parseInt(e.target.value))}
+          value={ offset }
+          onChange={(e) => setOffset(parseInt(e.target.value))}
         />
       </div>
     </>
