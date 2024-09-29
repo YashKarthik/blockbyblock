@@ -14,6 +14,8 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
   const [destCoords, setDestCoords] = useState([-79.3790669409802, 43.64364522322814]);
   const [bestStart,  setBestStart] = useState<number[] | null>(null);
   const [bestMarker, setCurrBestMarker] = useState<mapboxgl.Marker>();
+  const [ogPrice, setOgPrice] = useState(0)
+  const [newPrice, setNewPrice] = useState(0)
 
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_PUBLIC_TOKEN as string
@@ -113,6 +115,8 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
       const geoJson = res['geo_json']
       const best_point = res['best_point']
       setBestStart([best_point['lon'], best_point['lat'], best_point['offset']]);
+      setOgPrice( best_point['og_price'])
+      setNewPrice(best_point['new_price']/1.3)
       // @ts-ignore
       mapRef.current.getSource('earthquakes').setData(geoJson);
     }
@@ -178,7 +182,10 @@ export function Map({ center, zoom, mapRef, mapContainerRef }: { center: [number
     <>
       <div className="h-screen w-screen" id="map-container" ref={mapContainerRef}>
       </div>
-
+      <div className="absolute bottom-16 right-0 m-4 mb-12 bg-orange-100 text-yellow-600 p-2 border-2 border-orange-400 rounded-md">
+      <p>Original Price: {ogPrice} $</p>
+      <p>New Price: {newPrice}$ </p>
+      </div>
       <div className="absolute bottom-3 right-0 m-4 bg-orange-100 text-yellow-600 p-2 border-2 border-orange-400 rounded-md">
         <h2>Time: <label id="active-hour">{ offset }</label></h2>
         <input

@@ -387,6 +387,6 @@ def get_address_from_coordinates(lat, lon, api_key):
 # print('Address:', address)
 
 
-generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
+# generate_geoJSON(start_lat, start_lon, end_lat, end_lon)
 
 #print(datetime.now())
